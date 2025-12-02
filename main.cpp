@@ -1,12 +1,23 @@
+#include <atomic>
 #include <cstring>
 #include <curses.h>
 #include <iostream>
 #include <vector>
 #include <random>
 #include <fstream>
-#include <ctime>
+#include <thread>
 
 #include "functions.h"
+
+
+
+//TODO:
+// - kursor skacze jak powalony, trzeba bedzie zbierac aktualan wartosc x y i je przenosic pewnie
+// - cala glowna funkcja do przebudowania
+
+    std::atomic<bool> running(true);
+    std::mutex mutex;
+
 
 int main() {
 
@@ -15,6 +26,8 @@ int main() {
     cbreak();
     noecho();
     keypad(stdscr, true);
+
+    std::thread timer_thread(timer_thread_function);
 
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_RED, COLOR_BLACK);
@@ -48,13 +61,11 @@ int main() {
         for (char letter : word_string) {
             generated_words_list.push_back(letter);
         }
-        addch(' ');
-
+        // addch(' ');  -> po chuj to?
     }
 
 
     display_gen_words(generated_words_list,10,10);
-    refresh();
 
     do {
         ch = getch();
@@ -62,8 +73,6 @@ int main() {
             message.pop_back();
             move(5,5);
             display_gen_words(generated_words_list,10,10);
-            timer_thread_function();
-            refresh();
         }
         else if (ch != KEY_BACKSPACE && ch) {
             message.push_back(ch);
@@ -74,23 +83,30 @@ int main() {
 
         //Displaying user input
 
-        move(10, 10);
+        {
+            move(10, 10);
 
-        for (int i = 0; i < message.size(); i++) {
-            if (message[i] == generated_words_list[i]) {
-                attron(COLOR_PAIR(1));
-                addch(message[i]);
-                attroff(COLOR_PAIR(1));
+            for (int i = 0; i < message.size(); i++) {
+                if (message[i] == generated_words_list[i]) {
+                    attron(COLOR_PAIR(1));
+                    addch(message[i]);
+                    attroff(COLOR_PAIR(1));
+                }
+                else {
+                    attron(COLOR_PAIR(2));
+                    addch(message[i]);
+                    attroff(COLOR_PAIR(2));
+                }
             }
-            else {
-                attron(COLOR_PAIR(2));
-                addch(message[i]);
-                attroff(COLOR_PAIR(2));
-            }
+            refresh();
         }
-        refresh();
+
     }
     while (ch != KEY_F(10) && ch != '\n' && ch != KEY_ENTER);
+
+    if (timer_thread.joinable()) {
+        timer_thread.join();
+    }
 
     endwin();
 
