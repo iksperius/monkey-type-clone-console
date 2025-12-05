@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <atomic>
 #include <cstring>
 #include <curses.h>
@@ -27,7 +28,7 @@ int main() {
     noecho();
     keypad(stdscr, true);
 
-    std::thread timer_thread(timer_thread_function);
+    // std::thread timer_thread(timer_thread_function);
 
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_RED, COLOR_BLACK);
@@ -36,77 +37,73 @@ int main() {
     int ch;
     int centerX = COLS/2;
     int centerY = LINES/2;
-    std::vector<char> message;
+    std::vector<char> user_typed_words;
+    int correctly_typed_chars = 0;
+    int shift_index = 0;
 
 
-    std::vector<char> generated_words_list;
+    //Generate array of words
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> GEN_words_count(10,20);
-    std::uniform_int_distribution<> GEN_words_top_1000(0,1000);
+    std::vector<char> generated_words_list = generate_random_words_array();
 
+    display_gen_words(generated_words_list,user_typed_words,10,10);
 
-    std::ifstream file("wordsTop1000.txt");
-    std::string word_string;
-
-    int words_count = GEN_words_count(gen);
-
-    move(centerY, centerX);
-    for (int i = 0; i < words_count; i++) {
-        for (int j = 0; j <= GEN_words_top_1000(gen); j++) {
-            getline(file, word_string);
-            word_string.append(" ");
-        }
-        for (char letter : word_string) {
-            generated_words_list.push_back(letter);
-        }
-        // addch(' ');  -> po chuj to?
-    }
-
-
-    display_gen_words(generated_words_list,10,10);
 
     do {
+
         ch = getch();
-        if ((ch == KEY_BACKSPACE) && !message.empty()) {
-            message.pop_back();
+        if (ch == KEY_BACKSPACE && !user_typed_words.empty()) {
+            user_typed_words.pop_back();
             move(5,5);
-            display_gen_words(generated_words_list,10,10);
+            // display_gen_words(generated_words_list,user_typed_words,10,10);
         }
-        else if (ch != KEY_BACKSPACE && ch) {
-            message.push_back(ch);
-        }
-        else {
-            continue;
-        }
-
-        //Displaying user input
-
-        {
-            move(10, 10);
-
-            for (int i = 0; i < message.size(); i++) {
-                if (message[i] == generated_words_list[i]) {
-                    attron(COLOR_PAIR(1));
-                    addch(message[i]);
-                    attroff(COLOR_PAIR(1));
-                }
-                else {
-                    attron(COLOR_PAIR(2));
-                    addch(message[i]);
-                    attroff(COLOR_PAIR(2));
+        // else if ((ch == ' ' && generated_words_list[user_typed_words.size()] == ' ') || ch != ' ')  {
+        //     user_typed_words.push_back(ch);
+        // }
+        else if (ch == ' ') {
+            if (generated_words_list[user_typed_words.size()] == ' ') {
+                user_typed_words.push_back(ch);
+            }
+            else {
+                int i = user_typed_words.size();
+                while (true) {
+                    if (generated_words_list[i] == ' ') {
+                        user_typed_words.push_back(' ');
+                        break;
+                    }
+                    user_typed_words.push_back('0');
+                    i++;
                 }
             }
-            refresh();
         }
+        else {
+            user_typed_words.push_back(ch);
+        }
+
+        display_user_input(user_typed_words,generated_words_list,10,10);
 
     }
     while (ch != KEY_F(10) && ch != '\n' && ch != KEY_ENTER);
 
-    if (timer_thread.joinable()) {
-        timer_thread.join();
+    move(5,10);
+    int i = 0;
+    for (char a : user_typed_words) {
+        if (a == generated_words_list[i]) {
+            correctly_typed_chars++;
+        }
     }
+    for (char a : std::to_string(correctly_typed_chars)) {
+        addch(a);
+    }
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        refresh();
+    }
+    getch();
+
+    // if (timer_thread.joinable()) {
+    //     timer_thread.join();
+    // }
 
     endwin();
 
