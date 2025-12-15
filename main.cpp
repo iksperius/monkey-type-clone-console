@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstring>
 #include <curses.h>
 #include <iostream>
@@ -100,7 +101,8 @@ int main() {
     }
     move(5,20);
     float wpm = correctly_typed_chars/start_time/5*60;
-    printw("%f", wpm);
+    wpm = std::round(wpm);
+    printw("%.0f", wpm);
     refresh();
     do {
         ch = getch();
