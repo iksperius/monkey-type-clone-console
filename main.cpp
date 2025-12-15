@@ -28,7 +28,8 @@ int main() {
     noecho();
     keypad(stdscr, true);
 
-    // std::thread timer_thread(timer_thread_function);
+    float start_time = 10;
+    std::thread timer_thread(timer_thread_function,start_time);
 
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_RED, COLOR_BLACK);
@@ -38,8 +39,8 @@ int main() {
     int centerX = COLS/2;
     int centerY = LINES/2;
     std::vector<char> user_typed_words;
-    int correctly_typed_chars = 0;
-    int shift_index = 0;
+    float correctly_typed_chars = 0;
+    // int shift_index = 0;
 
 
     //Generate array of words
@@ -55,7 +56,7 @@ int main() {
         if (ch == KEY_BACKSPACE && !user_typed_words.empty()) {
             user_typed_words.pop_back();
             move(5,5);
-            // display_gen_words(generated_words_list,user_typed_words,10,10);
+            display_gen_words(generated_words_list,user_typed_words,10,10);
         }
         // else if ((ch == ' ' && generated_words_list[user_typed_words.size()] == ' ') || ch != ' ')  {
         //     user_typed_words.push_back(ch);
@@ -83,27 +84,32 @@ int main() {
         display_user_input(user_typed_words,generated_words_list,10,10);
 
     }
-    while (ch != KEY_F(10) && ch != '\n' && ch != KEY_ENTER);
+    while (ch != KEY_F(10) && ch != '\n' && ch != KEY_ENTER && running);
 
-    move(5,10);
+    move(6,10);
     int i = 0;
     for (char a : user_typed_words) {
         if (a == generated_words_list[i]) {
             correctly_typed_chars++;
         }
+        i++;
     }
-    for (char a : std::to_string(correctly_typed_chars)) {
-        addch(a);
-    }
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        refresh();
-    }
-    getch();
 
-    // if (timer_thread.joinable()) {
-    //     timer_thread.join();
-    // }
+    for (char a : std::to_string(correctly_typed_chars)) {
+        printw("%c",a);
+    }
+    move(5,20);
+    float wpm = correctly_typed_chars/start_time/5*60;
+    printw("%f", wpm);
+    refresh();
+    do {
+        ch = getch();
+    }
+    while (ch != KEY_ENTER);
+
+    if (timer_thread.joinable()) {
+        timer_thread.join();
+    }
 
     endwin();
 

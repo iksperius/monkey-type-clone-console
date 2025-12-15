@@ -13,7 +13,7 @@ void display_gen_words(std::vector<char> &generated_words_list, std::vector<char
 
 void display_user_input(std::vector<char> &user_typed_words, std::vector<char> &generated_words_list, int x , int y);
 
-void timer_thread_function();
+void timer_thread_function(float start_time);
 
 std::vector<char> generate_random_words_array();
 

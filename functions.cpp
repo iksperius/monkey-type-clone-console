@@ -63,12 +63,13 @@ void display_user_input(std::vector<char> &user_typed_words, std::vector<char> &
     }
 }
 
-void timer_thread_function() {
-    int time_left = 5;
+void timer_thread_function(float start_time) {
+    int time_left = start_time;
     while (running && time_left > 0) {
         {
             std::lock_guard<std::mutex> lock(mutex);
             move(5,10);
+            clrtoeol();
             printw("%i",time_left);
             move(10,10);
             refresh();
@@ -79,11 +80,12 @@ void timer_thread_function() {
     {
         std::lock_guard<std::mutex> lock(mutex);
         move(5,10);
+        clrtoeol();
         printw("%s","Finished");
         // move(6,10);
         // printw("%",);
         refresh();
-
+        running = false;
     }
 
 }
@@ -91,7 +93,7 @@ void timer_thread_function() {
 std::vector<char> generate_random_words_array() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> GEN_words_count(10,20);
+    std::uniform_int_distribution<> GEN_words_count(20,30);
     std::uniform_int_distribution<> GEN_words_top_1000(0,1000);
 
     std::ifstream file("wordsTop1000.txt");
